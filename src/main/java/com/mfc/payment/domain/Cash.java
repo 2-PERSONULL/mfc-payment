@@ -10,16 +10,18 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 @Entity
+@Getter
 public class Cash extends BaseTimeEntity{
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "user_id", nullable = false, unique = true)
+	@Column(name = "user_id", nullable = false, unique = true, length = 10)
 	private Long userId;
 
 	@Column(name = "cash_balance", nullable = false)
