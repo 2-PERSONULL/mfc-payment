@@ -2,6 +2,8 @@ package com.mfc.payment.domain;
 
 import java.time.LocalDateTime;
 
+import com.mfc.payment.common.entity.BaseTimeEntity;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -12,7 +14,7 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 @Entity
-public class Cash {
+public class Cash extends BaseTimeEntity{
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -23,17 +25,9 @@ public class Cash {
 	@Column(name = "cash_balance", nullable = false)
 	private Integer balance;
 
-	@Column(name = "created_at", nullable = false)
-	private LocalDateTime createdAt;
-
-	@Column(name = "updated_at", nullable = false)
-	private LocalDateTime updatedAt;
-
 	@Builder
 	public Cash(Long userId, Integer balance) {
 		this.userId = userId;
 		this.balance = balance;
-		this.createdAt = LocalDateTime.now();
-		this.updatedAt = LocalDateTime.now();
 	}
 }
