@@ -1,7 +1,6 @@
 package com.mfc.payment.application;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +22,7 @@ public class PaymentServiceImpl implements PaymentService {
 	private final CashService cashService;
 
 	@Transactional
-	public CashResponse chargeCash(PaymentRequest request, UUID uuid) {
+	public void chargeCash(PaymentRequest request, String uuid) {
 		// 결제 처리 로직
 		Payment payment = Payment.builder()
 			.amount(request.getAmount())
@@ -36,10 +35,10 @@ public class PaymentServiceImpl implements PaymentService {
 		paymentRepository.save(payment);
 
 		// 캐시 잔액 업데이트
-		return cashService.createOrUpdateCash(uuid, request.getAmount());
+		cashService.createOrUpdateCash(uuid, request.getAmount());
 	}
 	@Transactional(readOnly = true)
-	public PaymentHistoryResponse getPaymentHistory(UUID uuid) {
+	public PaymentHistoryResponse getPaymentHistory(String uuid) {
 		List<Payment> payments = paymentRepository.findByUuid(uuid);
 
 		List<PaymentResponse> paymentResponses = payments.stream()

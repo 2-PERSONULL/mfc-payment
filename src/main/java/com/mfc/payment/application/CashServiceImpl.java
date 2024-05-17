@@ -1,7 +1,5 @@
 package com.mfc.payment.application;
 
-import java.util.UUID;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,10 +16,11 @@ public class CashServiceImpl implements CashService {
 	private final CashRepository cashRepository;
 
 	@Transactional
-	public CashResponse createOrUpdateCash(UUID uuid, Integer amount) {
+	public void createOrUpdateCash(String uuid, Integer amount) {
 		Cash cash = cashRepository.findByUuid(uuid)
 			.map(existingCash -> Cash.builder()
-				.uuid(existingCash.getUuid())
+				.id(existingCash.getId())
+				.uuid(uuid)
 				.balance(existingCash.getBalance() + amount)
 				.build())
 			.orElseGet(() -> Cash.builder()
@@ -29,14 +28,12 @@ public class CashServiceImpl implements CashService {
 				.balance(amount)
 				.build());
 
-		Cash savedCash = cashRepository.save(cash);
-		return CashResponse.builder()
-			.balance(savedCash.getBalance())
-			.build();
+		cashRepository.save(cash);
+
 	}
 
 	@Transactional(readOnly = true)
-	public CashResponse getCashBalance(UUID uuid) {
+	public CashResponse getCashBalance(String uuid) {
 		return cashRepository.findByUuid(uuid)
 			.map(cash -> CashResponse.builder()
 				.balance(cash.getBalance())

@@ -1,7 +1,5 @@
 package com.mfc.payment.presentation;
 
-import java.util.UUID;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PaymentController {
 	private final PaymentService paymentService;
 	@GetMapping("/history")
-	public BaseResponse<PaymentHistoryResponse> paymentHistory(@RequestHeader UUID uuid) {
+	public BaseResponse<PaymentHistoryResponse> paymentHistory(@RequestHeader String uuid) {
 		// 결제 내역 조회 서비스 호출
 		PaymentHistoryResponse response = paymentService.getPaymentHistory(uuid);
 
