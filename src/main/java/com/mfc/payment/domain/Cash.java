@@ -1,6 +1,6 @@
 package com.mfc.payment.domain;
 
-import java.time.LocalDateTime;
+import java.util.UUID;
 
 import com.mfc.payment.common.entity.BaseTimeEntity;
 
@@ -21,15 +21,15 @@ public class Cash extends BaseTimeEntity{
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "user_id", nullable = false, unique = true, length = 10)
-	private Long userId;
+	@Column(name = "uuid", nullable = false)
+	private UUID uuid;
 
 	@Column(name = "cash_balance", nullable = false)
 	private Integer balance;
 
 	@Builder
-	public Cash(Long userId, Integer balance) {
-		this.userId = userId;
+	public Cash(UUID uuid, Integer balance) {
+		this.uuid = uuid;
 		this.balance = balance;
 	}
 }

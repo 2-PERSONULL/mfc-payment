@@ -1,5 +1,7 @@
 package com.mfc.payment.application;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,32 +18,30 @@ public class CashServiceImpl implements CashService {
 	private final CashRepository cashRepository;
 
 	@Transactional
-	public CashResponse createOrUpdateCash(Long userId, Integer amount) {
-		Cash cash = cashRepository.findByUserId(userId)
+	public CashResponse createOrUpdateCash(UUID uuid, Integer amount) {
+		Cash cash = cashRepository.findByUuid(uuid)
 			.map(existingCash -> Cash.builder()
+				.uuid(existingCash.getUuid())
 				.balance(existingCash.getBalance() + amount)
 				.build())
 			.orElseGet(() -> Cash.builder()
-				.userId(userId)
+				.uuid(uuid)
 				.balance(amount)
 				.build());
 
 		Cash savedCash = cashRepository.save(cash);
 		return CashResponse.builder()
-			.userId(savedCash.getUserId())
 			.balance(savedCash.getBalance())
 			.build();
 	}
 
 	@Transactional(readOnly = true)
-	public CashResponse getCashBalance(Long userId) {
-		return cashRepository.findByUserId(userId)
+	public CashResponse getCashBalance(UUID uuid) {
+		return cashRepository.findByUuid(uuid)
 			.map(cash -> CashResponse.builder()
-				.userId(cash.getUserId())
 				.balance(cash.getBalance())
 				.build())
 			.orElseGet(() -> CashResponse.builder()
-				.userId(userId)
 				.balance(0)
 				.build());
 	}

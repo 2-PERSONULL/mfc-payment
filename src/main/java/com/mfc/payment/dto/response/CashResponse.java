@@ -6,6 +6,5 @@ import lombok.Getter;
 @Getter
 @Builder
 public class CashResponse {
-	private Long userId;
 	private Integer balance;
 }

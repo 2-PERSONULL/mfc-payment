@@ -60,53 +60,7 @@ public enum BaseResponseStatus {
 	PASSWORD_CONTAIN_EMAIL_FAILED(HttpStatus.BAD_REQUEST, false, 2110, "이메일이 포함된 비밀번호 입니다."),
 	DORMANCY_MEMBERS(HttpStatus.FORBIDDEN, false, 2111, "휴면 회원입니다."),
 
-	// Address
-	NO_EXIST_ADDRESS(HttpStatus.NOT_FOUND, false, 2300, "존재하지 않는 주소입니다."),
-
-	/**
-	 * 5000 : Cart & WishProductList Service Error
-	 */
-	NO_DATA(HttpStatus.BAD_REQUEST, false, 6001, "존재하지 않는 정보입니다"),
-	ALREADY_ADDED_PRODUCT(HttpStatus.CONFLICT, false, 6002, "이미 장바구니에 존재하는 상품입니다"),
-	ALREADY_ADDED_WISH_PRODUCT(HttpStatus.CONFLICT, false, 6003, "이미 찜한 상품입니다"),
-
-	/**
-	 * 7000 : item (image & brand & option & category)
-	 */
-	PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, false, 7001, "존재하지 않는 상품입니다."),
-	NO_PRODUCT_WITH_BRAND(HttpStatus.BAD_REQUEST, false, 7002, "브랜드 정보가 없는 상품입니다."),
-	BRAND_NOT_FOUND(HttpStatus.NOT_FOUND, false, 7003, "존재하지 않는 브랜드입니다."),
-	REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, false, 7004, "존재하지 않는 리뷰입니다."),
-	ITEM_OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, false, 7005, "존재하지 않는 상품 옵션입니다."),
-	ITEM_STOCK_NOT_ENOUGH(HttpStatus.BAD_REQUEST, false, 7006, "상품 재고가 부족합니다."),
-	ITEM_STOCK_RESTORE_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, false, 7007, "상품 재고 복구에 실패했습니다."),
-	BUNDLE_NOT_FOUND(HttpStatus.NOT_FOUND, false, 7008, "존재하지 않는 묶음입니다."),
-	CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, false, 7009, "존재하지 않는 카테고리입니다."),
-
-	/**
-	 * 8000 : purchase Service Error
-	 */
-	PURCHASE_NOT_FOUND(HttpStatus.NOT_FOUND, false, 8001, "존재하지 않는 주문입니다."),
-	PURCHASE_LIST_NOT_FOUND(HttpStatus.NOT_FOUND, false, 8002, "존재하지 않는 주문 상품입니다."),
-	PURCHASE_LIST_DUPLICATE(HttpStatus.CONFLICT, false, 8002, "이미 주문한 상품입니다. 주문 상품을 확인해주세요."),
-
-	/**
-	 * 9000 : review Service Error
-	 */
-	REVIEW_ALREADY_WRITTEN(HttpStatus.BAD_REQUEST, false, 9001, "이미 리뷰를 작성한 구매목록입니다."),
-	REVIEW_IMAGE_LIMIT(HttpStatus.BAD_REQUEST, false, 9002, "리뷰 이미지는 최대 3개까지 등록 가능합니다."),
-	REVIEW_IMAGE_AUTHORITY(HttpStatus.BAD_REQUEST, false, 9003, "리뷰 이미지를 등록할 권한이 없습니다."),
-	REVIEW_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, false, 9004, "존재하지 않는 리뷰 이미지입니다."),
-
-	/**
-	 * 10000 : clip Service Error
-	 */
-
-	CLIP_ITEM_ALREADY_ADDED(HttpStatus.BAD_REQUEST, false, 10001, "이미 좋아요한 상품입니다."),
-	CLIP_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, false, 10002, "좋아요한 상품이 아닙니다."),
-	CLIP_CATEGORY_ALREADY_ADDED(HttpStatus.BAD_REQUEST, false, 10003, "이미 좋아요한 카테고리입니다."),
-	CLIP_CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, false, 10004, "좋아요한 카테고리가 아닙니다."),
-	CLIP_CATEGORY_NOT_DELETED(HttpStatus.BAD_REQUEST, false, 10005, "카테고리 좋아요 삭제에 실패했습니다.");
+	PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, false, 10006, "존재하지 않는 입니다.");
 
 	private final HttpStatusCode httpStatusCode;
 	private final boolean isSuccess;

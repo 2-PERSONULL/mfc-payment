@@ -1,55 +1,30 @@
 package com.mfc.payment.presentation;
 
-import java.io.IOException;
+import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mfc.payment.application.PaymentService;
-import com.siot.IamportRestClient.IamportClient;
-import com.siot.IamportRestClient.exception.IamportResponseException;
-import com.siot.IamportRestClient.response.IamportResponse;
-import com.siot.IamportRestClient.response.Payment;
+import com.mfc.payment.common.response.BaseResponse;
+import com.mfc.payment.dto.response.PaymentHistoryResponse;
 
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
-@RequestMapping("api/v1")
+@RequestMapping("api/payment")
 @RequiredArgsConstructor
 @Slf4j
 public class PaymentController {
 	private final PaymentService paymentService;
-	private IamportClient iamportClient;
+	@GetMapping("/history")
+	public BaseResponse<PaymentHistoryResponse> paymentHistory(@RequestHeader UUID uuid) {
+		// 결제 내역 조회 서비스 호출
+		PaymentHistoryResponse response = paymentService.getPaymentHistory(uuid);
 
-	@Value("${iamport.key}")
-	private String apiKey;
-
-	@Value("${imp.secret}")
-	private String secretKey;
-
-	@PostConstruct
-	public void init() {
-		this.iamportClient = new IamportClient(apiKey, secretKey);
+		return new BaseResponse<>(response);
 	}
-
-	@PostMapping("/payment/{imp_uid}")
-	public IamportResponse<Payment> paymentByImpUid(@PathVariable("imp_uid") String imp_uid)
-		throws IamportResponseException, IOException {
-		return iamportClient.paymentByImpUid(imp_uid);
-	}
-	/**
-	 * 결제내역 조회
-	 * @param memberId
-	 * @return
-	 */
-	// @GetMapping("/payment-history/{memberId}")
-	// public ResponseEntity<List<PaymentHistoryDto>> paymentList(@PathVariable Long memberId) {
-	// 	return ResponseEntity.status(HttpStatus.OK).body(paymentService.paymentHistoryList(memberId));
-	// }
 }
