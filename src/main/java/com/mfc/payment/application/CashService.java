@@ -1,6 +1,6 @@
 package com.mfc.payment.application;
 
-import com.mfc.payment.dto.request.SendRequest;
+import com.mfc.payment.domain.event.PartnerCompletionEvent;
 import com.mfc.payment.dto.response.CashResponse;
 
 public interface CashService {
@@ -9,6 +9,8 @@ public interface CashService {
 
 	CashResponse getCashBalance(String uuid);
 
-	void sendCash(String uuid, SendRequest request);
+	void processPartnerSettlement(String userUuid, String partnerUuid, Integer amount);
+
+	void handlePartnerCompletionEvent(PartnerCompletionEvent event);
 
 }

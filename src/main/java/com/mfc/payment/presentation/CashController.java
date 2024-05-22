@@ -35,9 +35,4 @@ public class CashController {
 		final CashResponse cashResponse = cashService.getCashBalance(uuid);
 		return new BaseResponse<>(cashResponse);
 	}
-	@PutMapping("/send")
-	public BaseResponse<Void> sendCash(@RequestBody SendRequest request, @RequestHeader String uuid) {
-		cashService.sendCash(uuid, request);
-		return new BaseResponse<>();
-	}
 }
