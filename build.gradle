@@ -29,7 +29,7 @@ ext {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
-	//implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 	implementation 'com.github.iamport:iamport-rest-client-java:0.2.21'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2'
 	compileOnly 'org.projectlombok:lombok'
@@ -38,11 +38,11 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
-//dependencyManagement {
-//	imports {
-//		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
-//	}
-//}
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+	}
+}
 
 tasks.named('bootBuildImage') {
 	builder = 'paketobuildpacks/builder-jammy-base:latest'
