@@ -1,16 +1,21 @@
 package com.mfc.payment.application;
 
-import com.mfc.payment.domain.event.PartnerCompletionEvent;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.mfc.payment.dto.response.CashResponse;
 
 public interface CashService {
 
-	void createOrUpdateCash(String uuid, Integer amount);
+	void createOrUpdateCash(String uuid, Double amount);
 
 	CashResponse getCashBalance(String uuid);
 
-	void processPartnerSettlement(String userUuid, String partnerUuid, Integer amount);
+	@KafkaListener(topics = "user-settlement", groupId = "settlement-group")
+	@Transactional
+	void consumeUserSettlement(String message);
 
-	void handlePartnerCompletionEvent(PartnerCompletionEvent event);
-
+	@KafkaListener(topics = "partner-completion", groupId = "completion-group")
+	@Transactional
+	void consumePartnerCompletion(String message);
 }

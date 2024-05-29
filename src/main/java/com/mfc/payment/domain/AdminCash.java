@@ -1,34 +1,38 @@
 package com.mfc.payment.domain;
 
-import com.mfc.payment.common.entity.BaseTimeEntity;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 @Entity
+@Table(name = "admin_cash")
 @Getter
-public class Cash extends BaseTimeEntity{
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class AdminCash {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "uuid", nullable = false, unique = true)
-	private String uuid;
-
-	@Column(name = "cash_balance", nullable = false)
+	@Column(name = "balance")
 	private Double balance;
 
 	@Builder
-	public Cash(Long id, String uuid, Double balance) {
-		this.id = id;
-		this.uuid = uuid;
+	public AdminCash(Double balance) {
 		this.balance = balance;
+	}
+
+	public void addBalance(Double amount) {
+		this.balance += amount;
+	}
+
+	public void subtractBalance(Double amount) {
+		this.balance -= amount;
 	}
 }

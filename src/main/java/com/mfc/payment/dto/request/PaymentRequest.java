@@ -10,6 +10,6 @@ import lombok.Getter;
 public class PaymentRequest {
 	private Long paymentId;
 	private String paymentStatus;
-	private Integer amount;
+	private Double amount;
 	private LocalDateTime paymentDate;
 }

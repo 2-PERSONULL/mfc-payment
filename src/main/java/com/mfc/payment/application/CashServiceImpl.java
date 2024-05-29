@@ -5,10 +5,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mfc.payment.common.CashTransferStatus;
+import com.mfc.payment.domain.AdminCash;
 import com.mfc.payment.domain.Cash;
 import com.mfc.payment.domain.CashTransfer;
-import com.mfc.payment.domain.event.PartnerCompletionEvent;
 import com.mfc.payment.dto.response.CashResponse;
+import com.mfc.payment.infrastructure.AdminCashRepository;
 import com.mfc.payment.infrastructure.CashRepository;
 import com.mfc.payment.infrastructure.CashTransferRepository;
 
@@ -22,11 +23,11 @@ public class CashServiceImpl implements CashService {
 
 	private final CashRepository cashRepository;
 	private final CashTransferRepository cashTransferRepository;
-
+	private final AdminCashRepository adminCashRepository;
 
 	@Override
 	@Transactional
-	public void createOrUpdateCash(String uuid, Integer amount) {
+	public void createOrUpdateCash(String uuid, Double amount) {
 		Cash cash = cashRepository.findByUuid(uuid)
 			.map(existingCash -> Cash.builder()
 				.id(existingCash.getId())
@@ -39,7 +40,6 @@ public class CashServiceImpl implements CashService {
 				.build());
 
 		cashRepository.save(cash);
-
 	}
 
 	@Override
@@ -50,14 +50,23 @@ public class CashServiceImpl implements CashService {
 				.balance(cash.getBalance())
 				.build())
 			.orElseGet(() -> CashResponse.builder()
-				.balance(0)
+				.balance(0.0)
 				.build());
 	}
 
+	@KafkaListener(topics = "user-settlement", groupId = "settlement-group")
 	@Override
 	@Transactional
-	public void processPartnerSettlement(String userUuid, String partnerUuid, Integer amount) {
-		// 유저의 캐시 잔액 차감
+	public void consumeUserSettlement(String message) {
+		log.info("Received user settlement message: {}", message);
+
+		// 메시지를 파싱하여 필요한 정보 추출
+		// 예시: "UserUuid: user123, Amount: 1000"
+		String[] parts = message.split(", ");
+		String userUuid = parts[0].split(": ")[1];
+		Double amount = Double.parseDouble(parts[1].split(": ")[1]);
+
+		// 유저의 캐시 차감
 		Cash userCash = cashRepository.findByUuid(userUuid)
 			.orElseThrow(() -> new RuntimeException("유저의 캐시 정보를 찾을 수 없습니다."));
 
@@ -68,46 +77,62 @@ public class CashServiceImpl implements CashService {
 			.build();
 		cashRepository.save(updatedUserCash);
 
-		// 캐시 전송 내역 저장
+		// 어드민 계좌로 입금
+		AdminCash adminCash = adminCashRepository.findById(1L)
+			.orElseGet(() -> AdminCash.builder()
+				.balance(0.0)
+				.build());
+
+		adminCash.addBalance(amount);
+
+		// CashTransfer 생성
 		CashTransfer cashTransfer = CashTransfer.builder()
 			.userUuid(userUuid)
-			.partnerUuid(partnerUuid)
 			.amount(amount)
-			.cashTransferStatus(CashTransferStatus.PENDING)
+			.status(CashTransferStatus.COMPLETED)
 			.build();
 		cashTransferRepository.save(cashTransfer);
 	}
 
+	@KafkaListener(topics = "partner-completion", groupId = "completion-group")
 	@Override
-	@KafkaListener(topics = "my-topic", groupId = "cash-service")
-	public void handlePartnerCompletionEvent(PartnerCompletionEvent event) {
+	@Transactional
+	public void consumePartnerCompletion(String message) {
+		log.info("Received partner completion message: {}", message);
 
-		// String partnerUuid = event.getPartnerUuid();
-		//
-		// // 대기 중인 캐시 전송 내역 조회
-		// CashTransfer cashTransfer = cashTransferRepository.findByPartnerUuidAndCashTransferStatus(partnerUuid, CashTransferStatus.PENDING)
-		// 	.orElseThrow(() -> new RuntimeException("대기 중인 캐시 전송 내역을 찾을 수 없습니다."));
-		//
-		// // 파트너의 캐시 잔액 증가
-		// Cash partnerCash = cashRepository.findByUuid(partnerUuid)
-		// 	.map(existingCash -> Cash.builder()
-		// 		.id(existingCash.getId())
-		// 		.uuid(partnerUuid)
-		// 		.balance(existingCash.getBalance() + cashTransfer.getAmount())
-		// 		.build())
-		// 	.orElseGet(() -> Cash.builder()
-		// 		.uuid(partnerUuid)
-		// 		.balance(cashTransfer.getAmount())
-		// 		.build());
-		// cashRepository.save(partnerCash);
-		//
-		// // 캐시 전송 내역 상태 변경
-		// cashTransfer.complete();
-		// cashTransferRepository.save(cashTransfer);
-	}
-	@KafkaListener(topics = "my-topic", groupId = "my-group-id")
-	public void consume(String message) {
-		log.info("Received message: {}", message);
-		// 메시지 처리 로직을 작성합니다.
+		// 메시지를 파싱하여 필요한 정보 추출
+		// 예시: "PartnerUuid: partner123, Amount: 800"
+		String[] parts = message.split(", ");
+		String partnerUuid = parts[0].split(": ")[1];
+		Double amount = Double.parseDouble(parts[1].split(": ")[1]);
+
+		// 어드민 계좌에서 차감
+		AdminCash adminAccount = adminCashRepository.findById(1L)
+			.orElseGet(() -> AdminCash.builder()
+				.balance(0.0)
+				.build());
+
+		adminAccount.subtractBalance(amount);
+
+		// 파트너 계좌로 입금
+		Cash partnerCash = cashRepository.findByUuid(partnerUuid)
+			.map(existingCash -> Cash.builder()
+				.id(existingCash.getId())
+				.uuid(partnerUuid)
+				.balance(existingCash.getBalance() + amount)
+				.build())
+			.orElseGet(() -> Cash.builder()
+				.uuid(partnerUuid)
+				.balance(amount)
+				.build());
+		cashRepository.save(partnerCash);
+
+		// CashTransfer 생성
+		CashTransfer cashTransfer = CashTransfer.builder()
+			.partnerUuid(partnerUuid)
+			.amount(amount)
+			.status(CashTransferStatus.COMPLETED)
+			.build();
+		cashTransferRepository.save(cashTransfer);
 	}
 }
