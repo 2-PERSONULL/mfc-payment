@@ -11,7 +11,6 @@ import com.mfc.payment.application.CashService;
 import com.mfc.payment.application.PaymentService;
 import com.mfc.payment.common.response.BaseResponse;
 import com.mfc.payment.dto.request.PaymentRequest;
-import com.mfc.payment.dto.request.SendRequest;
 import com.mfc.payment.dto.response.CashResponse;
 
 import lombok.RequiredArgsConstructor;

@@ -54,7 +54,7 @@ public class CashServiceImpl implements CashService {
 				.build());
 	}
 
-	@KafkaListener(topics = "user-settlement", groupId = "settlement-group")
+	@KafkaListener(topics = "user-settlement", groupId = "cash-service-group")
 	@Override
 	@Transactional
 	public void consumeUserSettlement(String message) {
@@ -64,7 +64,8 @@ public class CashServiceImpl implements CashService {
 		// 예시: "UserUuid: user123, Amount: 1000"
 		String[] parts = message.split(", ");
 		String userUuid = parts[0].split(": ")[1];
-		Double amount = Double.parseDouble(parts[1].split(": ")[1]);
+		String partnerUuid = parts[1].split(": ")[1];
+		Double amount = Double.parseDouble(parts[2].split(": ")[1]);
 
 		// 유저의 캐시 차감
 		Cash userCash = cashRepository.findByUuid(userUuid)
@@ -84,17 +85,19 @@ public class CashServiceImpl implements CashService {
 				.build());
 
 		adminCash.addBalance(amount);
+		adminCashRepository.save(adminCash);
 
 		// CashTransfer 생성
 		CashTransfer cashTransfer = CashTransfer.builder()
 			.userUuid(userUuid)
+			.partnerUuid(partnerUuid)
 			.amount(amount)
 			.status(CashTransferStatus.COMPLETED)
 			.build();
 		cashTransferRepository.save(cashTransfer);
 	}
 
-	@KafkaListener(topics = "partner-completion", groupId = "completion-group")
+	@KafkaListener(topics = "partner-completion", groupId = "cash-service-group")
 	@Override
 	@Transactional
 	public void consumePartnerCompletion(String message) {
@@ -103,16 +106,17 @@ public class CashServiceImpl implements CashService {
 		// 메시지를 파싱하여 필요한 정보 추출
 		// 예시: "PartnerUuid: partner123, Amount: 800"
 		String[] parts = message.split(", ");
-		String partnerUuid = parts[0].split(": ")[1];
-		Double amount = Double.parseDouble(parts[1].split(": ")[1]);
+		String userUuid = parts[0].split(": ")[1];
+		String partnerUuid = parts[1].split(": ")[1];
+		Double amount = Double.parseDouble(parts[2].split(": ")[1]);
 
 		// 어드민 계좌에서 차감
-		AdminCash adminAccount = adminCashRepository.findById(1L)
+		AdminCash adminCash = adminCashRepository.findById(1L)
 			.orElseGet(() -> AdminCash.builder()
 				.balance(0.0)
 				.build());
 
-		adminAccount.subtractBalance(amount);
+		adminCash.subtractBalance(amount);
 
 		// 파트너 계좌로 입금
 		Cash partnerCash = cashRepository.findByUuid(partnerUuid)
@@ -129,6 +133,7 @@ public class CashServiceImpl implements CashService {
 
 		// CashTransfer 생성
 		CashTransfer cashTransfer = CashTransfer.builder()
+			.userUuid(userUuid)
 			.partnerUuid(partnerUuid)
 			.amount(amount)
 			.status(CashTransferStatus.COMPLETED)
