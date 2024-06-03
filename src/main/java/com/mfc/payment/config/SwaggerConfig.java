@@ -17,26 +17,28 @@ public class SwaggerConfig {
 	@Bean
 	public OpenAPI openAPI() {
 		SecurityScheme apiKey = new SecurityScheme()
-			.type(SecurityScheme.Type.HTTP)
-			.in(SecurityScheme.In.HEADER)
-			.name("Authorization")
-			.scheme("bearer")
-			.bearerFormat("JWT");
+				.type(SecurityScheme.Type.HTTP)
+				.in(SecurityScheme.In.HEADER)
+				.name("Authorization")
+				.scheme("bearer")
+				.bearerFormat("JWT");
 
-		SecurityRequirement securityRequirement = new SecurityRequirement().addList("Bearer Token") ;// 여기까지 다 추가
+		SecurityRequirement securityRequirement = new SecurityRequirement().addList("Bearer Token");
 
 		return new OpenAPI()
-			.addServersItem(new Server().url("/member-service"))
-			.components(new Components()
-				.addSecuritySchemes("Bearer Token", apiKey))
-			.security(Arrays.asList(securityRequirement));
+				.addServersItem(new Server().url("/"))
+				.addServersItem(new Server().url("/payment-service"))
+				.components(new Components()
+						.addSecuritySchemes("Bearer Token", apiKey))
+				.security(Arrays.asList(securityRequirement))
+				.info(apiInfo());
 	}
 
 	private Info apiInfo() {
 		return new Info()
-			.title("Springdoc 테스트")
-			.description("Springdoc을 사용한 Swagger UI 테스트")
-			.version("1.0.0");
+				.title("Personull Payment")
+				.description("Personull Payment Swagger UI")
+				.version("1.0.0");
 	}
 
 }
