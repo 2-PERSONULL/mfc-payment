@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.mfc.payment.domain.Payment;
 import com.mfc.payment.dto.request.PaymentRequest;
-import com.mfc.payment.dto.response.CashResponse;
 import com.mfc.payment.dto.response.PaymentHistoryResponse;
 import com.mfc.payment.dto.response.PaymentResponse;
 import com.mfc.payment.infrastructure.PaymentRepository;
@@ -49,11 +48,8 @@ public class PaymentServiceImpl implements PaymentService {
 				.build())
 			.toList();
 
-		CashResponse cashResponse = cashService.getCashBalance(uuid);
-
 		return PaymentHistoryResponse.builder()
 			.paymentResponses(paymentResponses)
-			.cashResponse(cashResponse)
 			.build();
 	}
 }

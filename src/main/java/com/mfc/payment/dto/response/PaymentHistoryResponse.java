@@ -9,5 +9,4 @@ import lombok.Getter;
 @Builder
 public class PaymentHistoryResponse {
 	private List<PaymentResponse> paymentResponses;
-	private CashResponse cashResponse;
 }

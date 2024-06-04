@@ -40,4 +40,5 @@ public class SwaggerConfig {
 				.description("Personull Payment Swagger UI")
 				.version("1.0.0");
 	}
+
 }
