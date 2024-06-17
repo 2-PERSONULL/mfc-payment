@@ -11,6 +11,7 @@ import com.mfc.payment.application.CashService;
 import com.mfc.payment.application.PaymentService;
 import com.mfc.payment.common.response.BaseResponse;
 import com.mfc.payment.dto.request.PaymentRequest;
+import com.mfc.payment.dto.request.TransferRequest;
 import com.mfc.payment.dto.response.CashResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -33,5 +34,17 @@ public class CashController {
 	public BaseResponse<CashResponse> getCashBalance(@RequestHeader String uuid) {
 		final CashResponse cashResponse = cashService.getCashBalance(uuid);
 		return new BaseResponse<>(cashResponse);
+	}
+
+	@PutMapping("/cancel")
+	public BaseResponse<Void> cancelPayment(@RequestBody TransferRequest request) {
+		cashService.cancelPayment(request.getUserUuid(), request.getPartnerUuid(), request.getAmount());
+		return new BaseResponse<>();
+	}
+
+	@PutMapping("/transfer")
+	public BaseResponse<Void> transferCash(@RequestBody TransferRequest request) {
+		cashService.consumeUserSettlement(request);
+		return new BaseResponse<>();
 	}
 }
