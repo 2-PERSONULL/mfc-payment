@@ -18,6 +18,9 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.kafka.support.serializer.JsonSerializer;
+
+import com.mfc.payment.dto.kafka.PaymentCompletedEvent;
 
 @Configuration
 @EnableKafka
@@ -34,16 +37,16 @@ public class KafkaConfig {
 
 	// Producer Configuration
 	@Bean
-	public ProducerFactory<String, Object> producerFactory() {
+	public ProducerFactory<String, PaymentCompletedEvent> producerFactory() {
 		Map<String, Object> configProps = new HashMap<>();
 		configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, producerBootstrapServers);
 		configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-		configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+		configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
 		return new DefaultKafkaProducerFactory<>(configProps);
 	}
 
 	@Bean
-	public KafkaTemplate<String, Object> kafkaTemplate() {
+	public KafkaTemplate<String, PaymentCompletedEvent> kafkaTemplate() {
 		return new KafkaTemplate<>(producerFactory());
 	}
 
@@ -54,7 +57,7 @@ public class KafkaConfig {
 		configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, consumerBootstrapServers);
 		configProps.put(ConsumerConfig.GROUP_ID_CONFIG, consumerGroupId);
 		configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-		configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+		configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
 		configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
 		return new DefaultKafkaConsumerFactory<>(configProps);
 	}
