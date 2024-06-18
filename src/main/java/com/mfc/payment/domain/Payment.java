@@ -25,7 +25,7 @@ public class Payment extends BaseTimeEntity{
 	private String uuid;
 
 	@Column(name = "payment_id", nullable = false)
-	private Long paymentId;
+	private String paymentId;
 
 	@Column(name = "amount", nullable = false)
 	private Double amount;
@@ -37,7 +37,7 @@ public class Payment extends BaseTimeEntity{
 	private LocalDateTime paymentDate;
 
 	@Builder
-	public Payment(String uuid, Long paymentId, Double amount, String paymentStatus, LocalDateTime paymentDate) {
+	public Payment(String uuid, String paymentId, Double amount, String paymentStatus, LocalDateTime paymentDate) {
 		this.uuid = uuid;
 		this.paymentId = paymentId;
 		this.amount = amount;

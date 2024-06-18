@@ -8,7 +8,7 @@ import lombok.Getter;
 @Getter
 @Builder
 public class PaymentRequest {
-	private Long paymentId;
+	private String paymentId;
 	private String paymentStatus;
 	private Double amount;
 	private LocalDateTime paymentDate;

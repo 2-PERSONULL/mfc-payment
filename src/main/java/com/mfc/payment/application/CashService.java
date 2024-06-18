@@ -14,10 +14,6 @@ public interface CashService {
 
 	void consumeUserSettlement(TransferRequest request);
 
-	@KafkaListener(topics = "partner-completion", groupId = "completion-group")
-	@Transactional
-	void consumePartnerCompletion(String message);
-
 	@Transactional
 	void cancelPayment(String userUuid, String partnerUuid, Double amount);
 }
