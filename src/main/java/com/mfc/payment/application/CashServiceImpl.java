@@ -1,6 +1,5 @@
 package com.mfc.payment.application;
 
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,7 +8,6 @@ import com.mfc.payment.common.CashTransferStatus;
 import com.mfc.payment.domain.AdminCash;
 import com.mfc.payment.domain.Cash;
 import com.mfc.payment.domain.CashTransfer;
-import com.mfc.payment.dto.kafka.PartnerCompletionDto;
 import com.mfc.payment.dto.kafka.PaymentCompletedEvent;
 import com.mfc.payment.dto.request.TransferRequest;
 import com.mfc.payment.dto.response.CashResponse;

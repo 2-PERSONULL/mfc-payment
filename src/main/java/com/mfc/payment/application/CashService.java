@@ -1,6 +1,5 @@
 package com.mfc.payment.application;
 
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mfc.payment.dto.request.TransferRequest;

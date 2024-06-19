@@ -8,7 +8,7 @@ import com.mfc.payment.common.CashTransferStatus;
 import com.mfc.payment.domain.AdminCash;
 import com.mfc.payment.domain.Cash;
 import com.mfc.payment.domain.CashTransfer;
-import com.mfc.payment.dto.kafka.PartnerCompletionDto;
+import com.mfc.payment.dto.kafka.TradeSettledEventDto;
 import com.mfc.payment.infrastructure.AdminCashRepository;
 import com.mfc.payment.infrastructure.CashRepository;
 import com.mfc.payment.infrastructure.CashTransferRepository;
@@ -25,9 +25,9 @@ public class TradeCompletionListener {
 	private final CashRepository cashRepository;
 	private final CashTransferRepository cashTransferRepository;
 
-	@KafkaListener(topics = "partner-completion", groupId = "cash-service-group")
+	@KafkaListener(topics = "partner-completion", containerFactory = "kafkaListenerContainerFactory")
 	@Transactional
-	public void consumePartnerCompletion(PartnerCompletionDto dto) {
+	public void consumePartnerCompletion(TradeSettledEventDto dto) {
 		log.info("Received partner completion message: {}", dto);
 
 		try {
