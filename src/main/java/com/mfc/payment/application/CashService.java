@@ -1,6 +1,5 @@
 package com.mfc.payment.application;
 
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mfc.payment.dto.request.TransferRequest;
@@ -13,10 +12,6 @@ public interface CashService {
 	CashResponse getCashBalance(String uuid);
 
 	void consumeUserSettlement(TransferRequest request);
-
-	@KafkaListener(topics = "partner-completion", groupId = "completion-group")
-	@Transactional
-	void consumePartnerCompletion(String message);
 
 	@Transactional
 	void cancelPayment(String userUuid, String partnerUuid, Double amount);

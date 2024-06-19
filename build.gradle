@@ -30,13 +30,15 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-	implementation 'com.github.iamport:iamport-rest-client-java:0.2.21'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2'
 	implementation 'org.springframework.kafka:spring-kafka'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+	// swagger
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2'
 }
 
 dependencyManagement {

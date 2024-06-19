@@ -1,6 +1,5 @@
 package com.mfc.payment.application;
 
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,7 +63,10 @@ public class CashServiceImpl implements CashService {
 
 		// 유저의 캐시 차감
 		Cash userCash = cashRepository.findByUuid(request.getUserUuid())
-			.orElseThrow(() -> new RuntimeException("유저의 캐시 정보를 찾을 수 없습니다."));
+			.orElseGet(() -> Cash.builder()
+				.uuid(request.getUserUuid())
+				.balance(0.0)
+				.build());
 
 		if (userCash.getBalance() < request.getAmount()) {
 			throw new RuntimeException("유저의 캐시 잔액이 부족합니다.");
@@ -101,50 +103,6 @@ public class CashServiceImpl implements CashService {
 			.build();
 
 		kafkaTemplate.send("payment-completed", event);
-	}
-
-	@KafkaListener(topics = "partner-completion", groupId = "cash-service-group")
-	@Override
-	@Transactional
-	public void consumePartnerCompletion(String message) {
-		log.info("Received partner completion message: {}", message);
-
-		// 메시지를 파싱하여 필요한 정보 추출
-		// 예시: "PartnerUuid: partner123, Amount: 800"
-		String[] parts = message.split(", ");
-		String userUuid = parts[0].split(": ")[1];
-		String partnerUuid = parts[1].split(": ")[1];
-		Double amount = Double.parseDouble(parts[2].split(": ")[1]);
-
-		// 어드민 계좌에서 차감
-		AdminCash adminCash = adminCashRepository.findById(1L)
-			.orElseGet(() -> AdminCash.builder()
-				.balance(0.0)
-				.build());
-
-		adminCash.subtractBalance(amount);
-
-		// 파트너 계좌로 입금
-		Cash partnerCash = cashRepository.findByUuid(partnerUuid)
-			.map(existingCash -> Cash.builder()
-				.id(existingCash.getId())
-				.uuid(partnerUuid)
-				.balance(existingCash.getBalance() + amount)
-				.build())
-			.orElseGet(() -> Cash.builder()
-				.uuid(partnerUuid)
-				.balance(amount)
-				.build());
-		cashRepository.save(partnerCash);
-
-		// CashTransfer 생성
-		CashTransfer cashTransfer = CashTransfer.builder()
-			.userUuid(userUuid)
-			.partnerUuid(partnerUuid)
-			.amount(amount)
-			.status(CashTransferStatus.COMPLETED)
-			.build();
-		cashTransferRepository.save(cashTransfer);
 	}
 
 	@Override

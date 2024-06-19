@@ -31,4 +31,8 @@ public class Cash extends BaseTimeEntity{
 		this.uuid = uuid;
 		this.balance = balance;
 	}
+
+	public void addBalance(Double amount) {
+		this.balance += amount;
+	}
 }
