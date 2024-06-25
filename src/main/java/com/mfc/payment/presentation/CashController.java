@@ -1,11 +1,12 @@
 package com.mfc.payment.presentation;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -95,11 +96,21 @@ public class CashController {
 		@Parameter(description = "상태별 필터", schema = @Schema(allowableValues = {"PAYMENT_COMPLETED", "SETTLEMENT_COMPLETED", "CANCELLED"}))
 		@RequestParam(required = false) CashTransferStatus status,
 		@Parameter(description = "월별 필터 (형식: yyyy-MM)")
-		@RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") LocalDate month,
-		@PageableDefault(size = 20, sort = "createdDate,desc")
-		@Parameter(description = "페이지네이션 정보") Pageable pageable) {
+		@RequestParam(required = false) String month,
+		@Parameter(description = "페이지 번호 (0부터 시작)")
+		@RequestParam(defaultValue = "0") int page,
+		@Parameter(description = "페이지 크기")
+		@RequestParam(defaultValue = "30") int pageSize) {
 
-		Page<CashTransferHistoryResponse> history = cashService.getCashTransferHistory(uuid, status, month, pageable);
+		LocalDate monthDate = null;
+		if (month != null && !month.isEmpty()) {
+			YearMonth yearMonth = YearMonth.parse(month, DateTimeFormatter.ofPattern("yyyy-MM"));
+			monthDate = yearMonth.atDay(1);
+		}
+
+		PageRequest pageRequest = PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "createdDate"));
+
+		Page<CashTransferHistoryResponse> history = cashService.getCashTransferHistory(uuid, status, monthDate, pageRequest);
 		return new BaseResponse<>(history);
 	}
 }
