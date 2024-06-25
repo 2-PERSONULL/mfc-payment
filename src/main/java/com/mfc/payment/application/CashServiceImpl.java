@@ -74,7 +74,7 @@ public class CashServiceImpl implements CashService {
 		LocalDate startOfMonth = month != null ? month.withDayOfMonth(1) : null;
 		LocalDate endOfMonth = month != null ? month.withDayOfMonth(month.lengthOfMonth()) : null;
 
-		return cashTransferRepository.findByUserUuidAndStatusAndDateRange(uuid, status, startOfMonth, endOfMonth, pageable)
+		return cashTransferRepository.findByCashTransferHistory(uuid, status, startOfMonth, endOfMonth, pageable)
 			.map(this::mapToCashTransferHistoryResponse);
 	}
 

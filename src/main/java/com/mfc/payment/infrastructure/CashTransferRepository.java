@@ -12,12 +12,13 @@ import com.mfc.payment.common.CashTransferStatus;
 import com.mfc.payment.domain.CashTransfer;
 
 public interface CashTransferRepository extends JpaRepository<CashTransfer, Long> {
-	@Query("SELECT ct FROM CashTransfer ct WHERE ct.userUuid = :userUuid " +
+	@Query("SELECT ct FROM CashTransfer ct WHERE " +
+		"(ct.userUuid = :uuid OR ct.partnerUuid = :uuid) " +
 		"AND (:status IS NULL OR ct.status = :status) " +
 		"AND (:startDate IS NULL OR ct.createdDate >= :startDate) " +
 		"AND (:endDate IS NULL OR ct.createdDate <= :endDate)")
-	Page<CashTransfer> findByUserUuidAndStatusAndDateRange(
-		@Param("userUuid") String userUuid,
+	Page<CashTransfer> findByCashTransferHistory(
+		@Param("uuid") String uuid,
 		@Param("status") CashTransferStatus status,
 		@Param("startDate") LocalDate startDate,
 		@Param("endDate") LocalDate endDate,
