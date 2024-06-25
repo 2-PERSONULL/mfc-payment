@@ -18,17 +18,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PaymentController {
 	private final PaymentService paymentService;
-	//private final KafkaProducer kafkaProducer;
 	@GetMapping("/history")
 	public BaseResponse<PaymentHistoryResponse> paymentHistory(@RequestHeader String uuid) {
-		// 결제 내역 조회 서비스 호출
 		PaymentHistoryResponse response = paymentService.getPaymentHistory(uuid);
-
 		return new BaseResponse<>(response);
 	}
-
-	// @PostMapping
-	// public void sendMessage(@RequestBody String message) {
-	// 	kafkaProducer.sendMessage("my-topic", message);
-	// }
 }

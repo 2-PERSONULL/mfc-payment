@@ -1,5 +1,7 @@
 package com.mfc.payment.presentation;
 
+import java.util.List;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,6 +15,7 @@ import com.mfc.payment.common.response.BaseResponse;
 import com.mfc.payment.dto.request.PaymentRequest;
 import com.mfc.payment.dto.request.TransferRequest;
 import com.mfc.payment.dto.response.CashResponse;
+import com.mfc.payment.dto.response.CashTransferHistoryResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -46,5 +49,11 @@ public class CashController {
 	public BaseResponse<Void> transferCash(@RequestBody TransferRequest request) {
 		cashService.consumeUserSettlement(request);
 		return new BaseResponse<>();
+	}
+
+	@GetMapping("/history")
+	public BaseResponse<List<CashTransferHistoryResponse>> getCashTransferHistory(@RequestHeader String uuid) {
+		List<CashTransferHistoryResponse> history = cashService.getCashTransferHistory(uuid);
+		return new BaseResponse<>(history);
 	}
 }

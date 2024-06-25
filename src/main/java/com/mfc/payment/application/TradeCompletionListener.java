@@ -5,6 +5,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mfc.payment.common.CashTransferStatus;
+import com.mfc.payment.common.exception.BaseException;
+import com.mfc.payment.common.response.BaseResponseStatus;
 import com.mfc.payment.domain.AdminCash;
 import com.mfc.payment.domain.Cash;
 import com.mfc.payment.domain.CashTransfer;
@@ -31,41 +33,52 @@ public class TradeCompletionListener {
 		log.info("Received partner completion message: {}", dto);
 
 		try {
-			String userUuid = dto.getUserUuid();
-			String partnerUuid = dto.getPartnerUuid();
-			Double amount = dto.getAmount();
-
-			subtractFromAdminCash(amount);
-			depositToPartnerCash(partnerUuid, amount);
-			createCashTransfer(userUuid, partnerUuid, amount);
+			processTradeSettlement(dto);
+			log.info("Successfully processed trade settlement for user: {}, partner: {}", dto.getUserUuid(), dto.getPartnerUuid());
+		} catch (BaseException e) {
+			log.error("Failed to process trade settlement: {}", e.getMessage());
 		} catch (Exception e) {
-			log.error("Failed to consume partner completion message", e);
+			log.error("Unexpected error occurred while processing trade settlement", e);
 			throw e;
 		}
 	}
 
-	private void subtractFromAdminCash(Double amount) {
-		AdminCash adminCash = adminCashRepository.findById(1L)
-			.orElse(AdminCash.builder()
-				.balance(0.0)
-				.build());
+	private void processTradeSettlement(TradeSettledEventDto dto) {
+		String userUuid = dto.getUserUuid();
+		String partnerUuid = dto.getPartnerUuid();
+		Double amount = dto.getAmount();
 
+		subtractFromAdminCash(amount);
+		depositToPartnerCash(partnerUuid, amount);
+		createCashTransfer(userUuid, partnerUuid, amount);
+	}
+
+	private void subtractFromAdminCash(Double amount) {
+		AdminCash adminCash = getAdminCash();
+		if (adminCash.getBalance() < amount) {
+			throw new BaseException(BaseResponseStatus.NOT_ENOUGH_ADMIN_CASH);
+		}
 		adminCash.subtractBalance(amount);
 		adminCashRepository.save(adminCash);
 	}
 
-	private void depositToPartnerCash(String partnerUuid, Double amount) {
-		Cash partnerCash = cashRepository.findByUuid(partnerUuid)
-			.map(existingCash -> {
-				existingCash.addBalance(amount);
-				return existingCash;
-			})
-			.orElse(Cash.builder()
-				.uuid(partnerUuid)
-				.balance(amount)
-				.build());
+	private AdminCash getAdminCash() {
+		return adminCashRepository.findById(1L)
+			.orElseThrow(() -> new BaseException(BaseResponseStatus.ADMIN_CASH_NOT_FOUND));
+	}
 
+	private void depositToPartnerCash(String partnerUuid, Double amount) {
+		Cash partnerCash = getCashByUuid(partnerUuid);
+		partnerCash.addBalance(amount);
 		cashRepository.save(partnerCash);
+	}
+
+	private Cash getCashByUuid(String uuid) {
+		return cashRepository.findByUuid(uuid)
+			.orElseGet(() -> Cash.builder()
+				.uuid(uuid)
+				.balance(0.0)
+				.build());
 	}
 
 	private void createCashTransfer(String userUuid, String partnerUuid, Double amount) {
@@ -73,7 +86,7 @@ public class TradeCompletionListener {
 			.userUuid(userUuid)
 			.partnerUuid(partnerUuid)
 			.amount(amount)
-			.status(CashTransferStatus.COMPLETED)
+			.status(CashTransferStatus.SETTLEMENT_COMPLETED)
 			.build();
 
 		cashTransferRepository.save(cashTransfer);
