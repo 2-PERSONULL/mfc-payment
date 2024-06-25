@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -95,7 +96,9 @@ public class CashController {
 		@RequestParam(required = false) CashTransferStatus status,
 		@Parameter(description = "월별 필터 (형식: yyyy-MM)")
 		@RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") LocalDate month,
+		@PageableDefault(size = 20, sort = "createdDate,desc")
 		@Parameter(description = "페이지네이션 정보") Pageable pageable) {
+
 		Page<CashTransferHistoryResponse> history = cashService.getCashTransferHistory(uuid, status, month, pageable);
 		return new BaseResponse<>(history);
 	}

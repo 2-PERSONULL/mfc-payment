@@ -1,6 +1,7 @@
 package com.mfc.payment.application;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -71,10 +72,15 @@ public class CashServiceImpl implements CashService {
 	@Override
 	@Transactional(readOnly = true)
 	public Page<CashTransferHistoryResponse> getCashTransferHistory(String uuid, CashTransferStatus status, LocalDate month, Pageable pageable) {
-		LocalDate startOfMonth = month != null ? month.withDayOfMonth(1) : null;
-		LocalDate endOfMonth = month != null ? month.withDayOfMonth(month.lengthOfMonth()) : null;
+		LocalDateTime startDateTime = null;
+		LocalDateTime endDateTime = null;
 
-		return cashTransferRepository.findByCashTransferHistory(uuid, status, startOfMonth, endOfMonth, pageable)
+		if (month != null) {
+			startDateTime = month.atStartOfDay(); // 해당 월의 첫 날 00:00:00
+			endDateTime = month.plusMonths(1).atStartOfDay().minusNanos(1); // 해당 월의 마지막 날 23:59:59.999999999
+		}
+
+		return cashTransferRepository.findByCashTransferHistory(uuid, status, startDateTime, endDateTime, pageable)
 			.map(this::mapToCashTransferHistoryResponse);
 	}
 
