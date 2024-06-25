@@ -1,11 +1,26 @@
 package com.mfc.payment.infrastructure;
 
-import java.util.List;
+import java.time.LocalDate;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import com.mfc.payment.common.CashTransferStatus;
 import com.mfc.payment.domain.CashTransfer;
 
 public interface CashTransferRepository extends JpaRepository<CashTransfer, Long> {
-	List<CashTransfer> findByUserUuid(String uuid);
+	@Query("SELECT ct FROM CashTransfer ct WHERE ct.userUuid = :userUuid " +
+		"AND (:status IS NULL OR ct.status = :status) " +
+		"AND (:startDate IS NULL OR ct.createdDate >= :startDate) " +
+		"AND (:endDate IS NULL OR ct.createdDate <= :endDate)")
+	Page<CashTransfer> findByUserUuidAndStatusAndDateRange(
+		@Param("userUuid") String userUuid,
+		@Param("status") CashTransferStatus status,
+		@Param("startDate") LocalDate startDate,
+		@Param("endDate") LocalDate endDate,
+		Pageable pageable
+	);
 }

@@ -1,7 +1,11 @@
 package com.mfc.payment.application;
 
-import java.util.List;
+import java.time.LocalDate;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import com.mfc.payment.common.CashTransferStatus;
 import com.mfc.payment.dto.request.TransferRequest;
 import com.mfc.payment.dto.response.CashResponse;
 import com.mfc.payment.dto.response.CashTransferHistoryResponse;
@@ -41,7 +45,8 @@ public interface CashService {
 	 * @param userUuid 사용자 식별자
 	 * @return List<CashTransferHistoryResponse> 캐시 전송 내역
 	 */
-	List<CashTransferHistoryResponse> getCashTransferHistory(String userUuid);
+	Page<CashTransferHistoryResponse> getCashTransferHistory(String userUuid,
+		CashTransferStatus status, LocalDate month, Pageable pageable);
 
 
 }
