@@ -1,8 +1,9 @@
 package com.mfc.payment.application;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.time.LocalDate;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,10 +70,12 @@ public class CashServiceImpl implements CashService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public List<CashTransferHistoryResponse> getCashTransferHistory(String userUuid) {
-		return cashTransferRepository.findByUserUuid(userUuid).stream()
-			.map(this::mapToCashTransferHistoryResponse)
-			.collect(Collectors.toList());
+	public Page<CashTransferHistoryResponse> getCashTransferHistory(String uuid, CashTransferStatus status, LocalDate month, Pageable pageable) {
+		LocalDate startOfMonth = month != null ? month.withDayOfMonth(1) : null;
+		LocalDate endOfMonth = month != null ? month.withDayOfMonth(month.lengthOfMonth()) : null;
+
+		return cashTransferRepository.findByUserUuidAndStatusAndDateRange(uuid, status, startOfMonth, endOfMonth, pageable)
+			.map(this::mapToCashTransferHistoryResponse);
 	}
 
 	private Cash getCashByUuid(String uuid) {
