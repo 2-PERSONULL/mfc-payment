@@ -1,4 +1,4 @@
-package com.mfc.payment.domain.event;
+package com.mfc.payment.dto.kafka;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

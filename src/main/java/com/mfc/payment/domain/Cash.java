@@ -35,4 +35,8 @@ public class Cash extends BaseTimeEntity{
 	public void addBalance(Double amount) {
 		this.balance += amount;
 	}
+
+	public void subtractBalance(Double amount) {
+		this.balance -= amount;
+	}
 }

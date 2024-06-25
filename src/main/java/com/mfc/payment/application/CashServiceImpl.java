@@ -1,16 +1,22 @@
 package com.mfc.payment.application;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mfc.payment.common.CashTransferStatus;
+import com.mfc.payment.common.exception.BaseException;
+import com.mfc.payment.common.response.BaseResponseStatus;
 import com.mfc.payment.domain.AdminCash;
 import com.mfc.payment.domain.Cash;
 import com.mfc.payment.domain.CashTransfer;
 import com.mfc.payment.dto.kafka.PaymentCompletedEvent;
 import com.mfc.payment.dto.request.TransferRequest;
 import com.mfc.payment.dto.response.CashResponse;
+import com.mfc.payment.dto.response.CashTransferHistoryResponse;
 import com.mfc.payment.infrastructure.AdminCashRepository;
 import com.mfc.payment.infrastructure.CashRepository;
 import com.mfc.payment.infrastructure.CashTransferRepository;
@@ -31,109 +37,119 @@ public class CashServiceImpl implements CashService {
 	@Override
 	@Transactional
 	public void createOrUpdateCash(String uuid, Double amount) {
-		Cash cash = cashRepository.findByUuid(uuid)
-			.map(existingCash -> Cash.builder()
-				.id(existingCash.getId())
-				.uuid(uuid)
-				.balance(existingCash.getBalance() + amount)
-				.build())
-			.orElseGet(() -> Cash.builder()
-				.uuid(uuid)
-				.balance(amount)
-				.build());
-
+		Cash cash = getCashByUuid(uuid);
+		cash.addBalance(amount);
 		cashRepository.save(cash);
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public CashResponse getCashBalance(String uuid) {
-		return cashRepository.findByUuid(uuid)
-			.map(cash -> CashResponse.builder()
-				.balance(cash.getBalance())
-				.build())
-			.orElseGet(() -> CashResponse.builder()
-				.balance(0.0)
-				.build());
+		Cash cash = getCashByUuid(uuid);
+		return CashResponse.builder().balance(cash.getBalance()).build();
 	}
 
 	@Override
 	@Transactional
 	public void consumeUserSettlement(TransferRequest request) {
-
-		// 유저의 캐시 차감
-		Cash userCash = cashRepository.findByUuid(request.getUserUuid())
-			.orElseGet(() -> Cash.builder()
-				.uuid(request.getUserUuid())
-				.balance(0.0)
-				.build());
-
-		if (userCash.getBalance() < request.getAmount()) {
-			throw new RuntimeException("유저의 캐시 잔액이 부족합니다.");
-		}
-
-		Cash updatedUserCash = Cash.builder()
-			.id(userCash.getId())
-			.uuid(request.getUserUuid())
-			.balance(userCash.getBalance() - request.getAmount())
-			.build();
-		cashRepository.save(updatedUserCash);
-
-		// 어드민 계좌로 입금
-		AdminCash adminCash = adminCashRepository.findById(1L)
-			.orElseGet(() -> AdminCash.builder()
-				.balance(0.0)
-				.build());
-
-		adminCash.addBalance(request.getAmount());
-		adminCashRepository.save(adminCash);
-
-		// CashTransfer 생성
-		CashTransfer cashTransfer = CashTransfer.builder()
-			.userUuid(request.getUserUuid())
-			.partnerUuid(request.getPartnerUuid())
-			.amount(request.getAmount())
-			.status(CashTransferStatus.COMPLETED)
-			.build();
-		cashTransferRepository.save(cashTransfer);
-
-		PaymentCompletedEvent event = PaymentCompletedEvent.builder()
-			.requestId(request.getRequestId())
-			.partnerId(request.getPartnerUuid())
-			.build();
-
-		kafkaTemplate.send("payment-completed", event);
+		deductUserCash(request.getUserUuid(), request.getAmount());
+		depositToAdminCash(request.getAmount());
+		createCashTransfer(request, CashTransferStatus.PAYMENT_COMPLETED);
+		sendPaymentCompletedEvent(request);
 	}
 
 	@Override
 	@Transactional
 	public void cancelPayment(String userUuid, String partnerUuid, Double amount) {
-		// 어드민 계좌에서 금액 차감
-		AdminCash adminCash = adminCashRepository.findById(1L)
-			.orElseThrow(() -> new RuntimeException("어드민 캐시 정보를 찾을 수 없습니다."));
+		deductAdminCash(amount);
+		refundUserCash(userUuid, amount);
+		TransferRequest cancelRequest = createCancelRequest(userUuid, partnerUuid, amount);
+		createCashTransfer(cancelRequest, CashTransferStatus.CANCELLED);
+	}
 
-		adminCash.subtractBalance(amount);
+	@Override
+	@Transactional(readOnly = true)
+	public List<CashTransferHistoryResponse> getCashTransferHistory(String userUuid) {
+		return cashTransferRepository.findByUserUuid(userUuid).stream()
+			.map(this::mapToCashTransferHistoryResponse)
+			.collect(Collectors.toList());
+	}
+
+	private Cash getCashByUuid(String uuid) {
+		return cashRepository.findByUuid(uuid)
+			.orElseGet(() -> createNewCash(uuid));
+	}
+
+	private Cash createNewCash(String uuid) {
+		return Cash.builder().uuid(uuid).balance(0.0).build();
+	}
+
+	private void deductUserCash(String userUuid, Double amount) {
+		Cash userCash = getCashByUuid(userUuid);
+		if (userCash.getBalance() < amount) {
+			throw new BaseException(BaseResponseStatus.NOT_ENOUGH_CASH);
+		}
+		userCash.subtractBalance(amount);
+		cashRepository.save(userCash);
+	}
+
+	private void depositToAdminCash(Double amount) {
+		AdminCash adminCash = getAdminCash();
+		adminCash.addBalance(amount);
 		adminCashRepository.save(adminCash);
+	}
 
-		// 유저의 캐시에 금액 추가
-		Cash userCash = cashRepository.findByUuid(userUuid)
-			.orElseThrow(() -> new RuntimeException("유저의 캐시 정보를 찾을 수 없습니다."));
-
-		Cash updatedUserCash = Cash.builder()
-			.id(userCash.getId())
-			.uuid(userUuid)
-			.balance(userCash.getBalance() + amount)
-			.build();
-		cashRepository.save(updatedUserCash);
-
-		// CashTransfer 생성 (취소 상태로)
+	private void createCashTransfer(TransferRequest request, CashTransferStatus status) {
 		CashTransfer cashTransfer = CashTransfer.builder()
-			.userUuid(userUuid)
-			.partnerUuid(partnerUuid)
-			.amount(amount)
-			.status(CashTransferStatus.CANCELLED)
+			.userUuid(request.getUserUuid())
+			.partnerUuid(request.getPartnerUuid())
+			.amount(request.getAmount())
+			.status(status)
 			.build();
 		cashTransferRepository.save(cashTransfer);
 	}
 
+	private void sendPaymentCompletedEvent(TransferRequest request) {
+		PaymentCompletedEvent event = PaymentCompletedEvent.builder()
+			.requestId(request.getRequestId())
+			.partnerId(request.getPartnerUuid())
+			.build();
+		kafkaTemplate.send("payment-completed", event);
+	}
+
+	private void deductAdminCash(Double amount) {
+		AdminCash adminCash = getAdminCash();
+		adminCash.subtractBalance(amount);
+		adminCashRepository.save(adminCash);
+	}
+
+	private void refundUserCash(String userUuid, Double amount) {
+		Cash userCash = getCashByUuid(userUuid);
+		userCash.addBalance(amount);
+		cashRepository.save(userCash);
+	}
+
+	private AdminCash getAdminCash() {
+		return adminCashRepository.findById(1L)
+			.orElseThrow(() -> new BaseException(BaseResponseStatus.ADMIN_CASH_NOT_FOUND));
+	}
+
+	private TransferRequest createCancelRequest(String userUuid, String partnerUuid, Double amount) {
+		return TransferRequest.builder()
+			.userUuid(userUuid)
+			.partnerUuid(partnerUuid)
+			.amount(amount)
+			.build();
+	}
+
+	private CashTransferHistoryResponse mapToCashTransferHistoryResponse(CashTransfer transfer) {
+		return CashTransferHistoryResponse.builder()
+			.id(transfer.getId())
+			.userUuid(transfer.getUserUuid())
+			.partnerUuid(transfer.getPartnerUuid())
+			.amount(transfer.getAmount())
+			.status(transfer.getStatus())
+			.createdAt(transfer.getCreatedDate())
+			.build();
+	}
 }

@@ -1,5 +1,5 @@
 package com.mfc.payment.common;
 
 public enum CashTransferStatus {
-	PENDING, COMPLETED, CANCELLED
+	PENDING, PAYMENT_COMPLETED, SETTLEMENT_COMPLETED, CANCELLED
 }
