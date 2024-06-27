@@ -42,6 +42,7 @@ public class CashServiceImpl implements CashService {
 		Cash cash = getCashByUuid(uuid);
 		cash.addBalance(amount);
 		cashRepository.save(cash);
+		log.info("Cash updated for user {}: new balance {}", uuid, cash.getBalance());
 	}
 
 	@Override
@@ -54,19 +55,25 @@ public class CashServiceImpl implements CashService {
 	@Override
 	@Transactional
 	public void consumeUserSettlement(TransferRequest request) {
+		validateTransferRequest(request);
 		deductUserCash(request.getUserUuid(), request.getAmount());
 		depositToAdminCash(request.getAmount());
-		createCashTransfer(request, CashTransferStatus.PAYMENT_COMPLETED);
+		createCashTransfer(request);
 		sendPaymentCompletedEvent(request);
+		log.info("User settlement consumed: {}", request);
 	}
 
 	@Override
 	@Transactional
-	public void cancelPayment(String userUuid, String partnerUuid, Double amount) {
+	public void cancelPayment(String userUuid, String partnerUuid) {
+		CashTransfer lastTransfer = getLastTransfer(userUuid, partnerUuid);
+		validateCancellation(lastTransfer);
+
+		Double amount = lastTransfer.getAmount();
 		deductAdminCash(amount);
 		refundUserCash(userUuid, amount);
-		TransferRequest cancelRequest = createCancelRequest(userUuid, partnerUuid, amount);
-		createCashTransfer(cancelRequest, CashTransferStatus.CANCELLED);
+		createCashTransfer(userUuid, partnerUuid, amount);
+		log.info("Payment cancelled: user {}, partner {}, amount {}", userUuid, partnerUuid, amount);
 	}
 
 	@Override
@@ -76,8 +83,8 @@ public class CashServiceImpl implements CashService {
 		LocalDateTime endDateTime = null;
 
 		if (month != null) {
-			startDateTime = month.atStartOfDay(); // 해당 월의 첫 날 00:00:00
-			endDateTime = month.plusMonths(1).atStartOfDay().minusNanos(1); // 해당 월의 마지막 날 23:59:59.999999999
+			startDateTime = month.atStartOfDay();
+			endDateTime = month.plusMonths(1).atStartOfDay().minusNanos(1);
 		}
 
 		return cashTransferRepository.findByCashTransferHistory(uuid, status, startDateTime, endDateTime, pageable)
@@ -90,7 +97,8 @@ public class CashServiceImpl implements CashService {
 	}
 
 	private Cash createNewCash(String uuid) {
-		return Cash.builder().uuid(uuid).balance(0.0).build();
+		Cash newCash = Cash.builder().uuid(uuid).balance(0.0).build();
+		return cashRepository.save(newCash);
 	}
 
 	private void deductUserCash(String userUuid, Double amount) {
@@ -108,12 +116,22 @@ public class CashServiceImpl implements CashService {
 		adminCashRepository.save(adminCash);
 	}
 
-	private void createCashTransfer(TransferRequest request, CashTransferStatus status) {
+	private void createCashTransfer(TransferRequest request) {
 		CashTransfer cashTransfer = CashTransfer.builder()
 			.userUuid(request.getUserUuid())
 			.partnerUuid(request.getPartnerUuid())
 			.amount(request.getAmount())
-			.status(status)
+			.status(CashTransferStatus.PAYMENT_COMPLETED)
+			.build();
+		cashTransferRepository.save(cashTransfer);
+	}
+
+	private void createCashTransfer(String userUuid, String partnerUuid, Double amount) {
+		CashTransfer cashTransfer = CashTransfer.builder()
+			.userUuid(userUuid)
+			.partnerUuid(partnerUuid)
+			.amount(amount)
+			.status(CashTransferStatus.CANCELLED)
 			.build();
 		cashTransferRepository.save(cashTransfer);
 	}
@@ -128,6 +146,9 @@ public class CashServiceImpl implements CashService {
 
 	private void deductAdminCash(Double amount) {
 		AdminCash adminCash = getAdminCash();
+		if (adminCash.getBalance() < amount) {
+			throw new BaseException(BaseResponseStatus.NOT_ENOUGH_ADMIN_CASH);
+		}
 		adminCash.subtractBalance(amount);
 		adminCashRepository.save(adminCash);
 	}
@@ -143,14 +164,6 @@ public class CashServiceImpl implements CashService {
 			.orElseThrow(() -> new BaseException(BaseResponseStatus.ADMIN_CASH_NOT_FOUND));
 	}
 
-	private TransferRequest createCancelRequest(String userUuid, String partnerUuid, Double amount) {
-		return TransferRequest.builder()
-			.userUuid(userUuid)
-			.partnerUuid(partnerUuid)
-			.amount(amount)
-			.build();
-	}
-
 	private CashTransferHistoryResponse mapToCashTransferHistoryResponse(CashTransfer transfer) {
 		return CashTransferHistoryResponse.builder()
 			.id(transfer.getId())
@@ -160,5 +173,22 @@ public class CashServiceImpl implements CashService {
 			.status(transfer.getStatus())
 			.createdAt(transfer.getCreatedDate())
 			.build();
+	}
+
+	private void validateTransferRequest(TransferRequest request) {
+		if (request == null || request.getAmount() <= 0) {
+			throw new BaseException(BaseResponseStatus.INVALID_TRANSFER_REQUEST);
+		}
+	}
+
+	private CashTransfer getLastTransfer(String userUuid, String partnerUuid) {
+		return cashTransferRepository.findFirstByUserUuidAndPartnerUuidOrderByCreatedDateDesc(userUuid, partnerUuid)
+			.orElseThrow(() -> new BaseException(BaseResponseStatus.CASH_TRANSFER_NOT_FOUND));
+	}
+
+	private void validateCancellation(CashTransfer lastTransfer) {
+		if (lastTransfer.getStatus() == CashTransferStatus.CANCELLED) {
+			throw new BaseException(BaseResponseStatus.ALREADY_CANCELLED);
+		}
 	}
 }

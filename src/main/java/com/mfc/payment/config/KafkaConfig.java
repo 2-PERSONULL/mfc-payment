@@ -21,6 +21,7 @@ import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
 import com.mfc.payment.dto.kafka.PaymentCompletedEvent;
+import com.mfc.payment.dto.kafka.SettlementCashDto;
 import com.mfc.payment.dto.kafka.TradeSettledEventDto;
 
 @Configuration
@@ -69,6 +70,26 @@ public class KafkaConfig {
 	public ConcurrentKafkaListenerContainerFactory<String, TradeSettledEventDto> kafkaListenerContainerFactory() {
 		ConcurrentKafkaListenerContainerFactory<String, TradeSettledEventDto> factory = new ConcurrentKafkaListenerContainerFactory<>();
 		factory.setConsumerFactory(consumerFactory());
+		return factory;
+	}
+
+	@Bean
+	public ConsumerFactory<String, SettlementCashDto> settlementCashConsumerFactory() {
+		Map<String, Object> configProps = new HashMap<>();
+		configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, consumerBootstrapServers);
+		configProps.put(ConsumerConfig.GROUP_ID_CONFIG, consumerGroupId);
+		configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+		return new DefaultKafkaConsumerFactory<>(
+			configProps,
+			new StringDeserializer(),
+			new JsonDeserializer<>(SettlementCashDto.class, false)
+		);
+	}
+
+	@Bean
+	public ConcurrentKafkaListenerContainerFactory<String, SettlementCashDto> settlementCashKafkaListenerContainerFactory() {
+		ConcurrentKafkaListenerContainerFactory<String, SettlementCashDto> factory = new ConcurrentKafkaListenerContainerFactory<>();
+		factory.setConsumerFactory(settlementCashConsumerFactory());
 		return factory;
 	}
 }

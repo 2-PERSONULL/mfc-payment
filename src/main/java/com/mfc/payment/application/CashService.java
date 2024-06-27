@@ -36,9 +36,8 @@ public interface CashService {
 	 * 결제를 취소하고 금액을 환불합니다.
 	 * @param userUuid 사용자 식별자
 	 * @param partnerUuid 파트너 식별자
-	 * @param amount 환불 금액
 	 */
-	void cancelPayment(String userUuid, String partnerUuid, Double amount);
+	void cancelPayment(String userUuid, String partnerUuid);
 
 	/**
 	 * 캐시 전송내역을 보여줍니다.

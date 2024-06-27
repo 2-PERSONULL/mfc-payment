@@ -1,6 +1,7 @@
 package com.mfc.payment.infrastructure;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,4 +25,6 @@ public interface CashTransferRepository extends JpaRepository<CashTransfer, Long
 		@Param("endDate") LocalDateTime endDate,
 		Pageable pageable
 	);
+
+	Optional<CashTransfer> findFirstByUserUuidAndPartnerUuidOrderByCreatedDateDesc(String userUuid, String partnerUuid);
 }
