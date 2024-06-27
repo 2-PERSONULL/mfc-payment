@@ -69,8 +69,9 @@ public class CashController {
 	@ApiResponse(responseCode = "404", description = "결제 내역을 찾을 수 없음")
 	@PutMapping("/cancel")
 	public BaseResponse<Void> cancelPayment(
-		@Parameter(description = "이체 요청 상세 정보", required = true) @RequestBody TransferRequest request) {
-		cashService.cancelPayment(request.getUserUuid(), request.getPartnerUuid(), request.getAmount());
+		@Parameter(description = "유저 UUID", required = true) @RequestHeader String uuid,
+		@Parameter(description = "파트너 UUID", required = true) @RequestParam String partnerUuid) {
+		cashService.cancelPayment(uuid, partnerUuid);
 		return new BaseResponse<>();
 	}
 

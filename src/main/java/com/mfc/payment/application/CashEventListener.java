@@ -10,6 +10,7 @@ import com.mfc.payment.common.response.BaseResponseStatus;
 import com.mfc.payment.domain.AdminCash;
 import com.mfc.payment.domain.Cash;
 import com.mfc.payment.domain.CashTransfer;
+import com.mfc.payment.dto.kafka.SettlementCashDto;
 import com.mfc.payment.dto.kafka.TradeSettledEventDto;
 import com.mfc.payment.infrastructure.AdminCashRepository;
 import com.mfc.payment.infrastructure.CashRepository;
@@ -21,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class TradeCompletionListener {
+public class CashEventListener {
 
 	private final AdminCashRepository adminCashRepository;
 	private final CashRepository cashRepository;
@@ -42,6 +43,51 @@ public class TradeCompletionListener {
 			throw e;
 		}
 	}
+
+	@KafkaListener(topics = "settlement-cash-requests", containerFactory = "settlementCashKafkaListenerContainerFactory")
+	@Transactional
+	public void consumeSettlementCashRequest(SettlementCashDto dto) {
+		log.info("Received settlement cash request: {}", dto);
+
+		try {
+			processSettlementCashRequest(dto);
+			log.info("Successfully processed settlement cash request for partner: {}", dto.getPartnerId());
+		} catch (BaseException e) {
+			log.error("Failed to process settlement cash request: {}", e.getMessage());
+		} catch (Exception e) {
+			log.error("Unexpected error occurred while processing settlement cash request", e);
+			throw e;
+		}
+	}
+
+	private void processSettlementCashRequest(SettlementCashDto dto) {
+		String partnerId = dto.getPartnerId();
+		Double amount = dto.getAmount();
+
+		subtractFromPartnerCash(partnerId, amount);
+		createSettlementCashTransfer(partnerId, amount);
+	}
+
+	private void createSettlementCashTransfer(String partnerId, Double amount) {
+		CashTransfer cashTransfer = CashTransfer.builder()
+			.userUuid("")
+			.partnerUuid(partnerId)
+			.amount(amount)
+			.status(CashTransferStatus.ACCOUNT_SETTLED)
+			.build();
+
+		cashTransferRepository.save(cashTransfer);
+	}
+
+	private void subtractFromPartnerCash(String partnerId, Double amount) {
+		Cash partnerCash = getCashByUuid(partnerId);
+		if (partnerCash.getBalance() < amount) {
+			throw new BaseException(BaseResponseStatus.NOT_ENOUGH_CASH);
+		}
+		partnerCash.subtractBalance(amount);
+		cashRepository.save(partnerCash);
+	}
+
 
 	private void processTradeSettlement(TradeSettledEventDto dto) {
 		String userUuid = dto.getUserUuid();
