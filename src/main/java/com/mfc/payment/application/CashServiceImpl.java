@@ -46,7 +46,7 @@ public class CashServiceImpl implements CashService {
 	}
 
 	@Override
-	@Transactional(readOnly = true)
+	@Transactional
 	public CashResponse getCashBalance(String uuid) {
 		Cash cash = getCashByUuid(uuid);
 		return CashResponse.builder().balance(cash.getBalance()).build();
