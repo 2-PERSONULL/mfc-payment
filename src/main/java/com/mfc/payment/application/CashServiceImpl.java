@@ -141,6 +141,7 @@ public class CashServiceImpl implements CashService {
 			.requestId(request.getRequestId())
 			.partnerId(request.getPartnerUuid())
 			.build();
+		log.info("send message {}, {}",event.getPartnerId(), event.getRequestId());
 		kafkaTemplate.send("payment-completed", event);
 	}
 
